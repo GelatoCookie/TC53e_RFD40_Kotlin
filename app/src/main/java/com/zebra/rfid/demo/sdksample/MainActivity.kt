@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity(), RFIDHandler.ResponseHandlerInterface {
         displayedTagLines.addAll(updatedLines)
         tagLineAdapter?.notifyDataSetChanged()
         updateTagReadSummary(updatedLines.size)
-        if (tagLineAdapter?.count ?: 0 > 0) {
+        if ((tagLineAdapter?.count ?: 0) > 0) {
             textrfid?.setSelection(tagLineAdapter!!.count - 1)
         }
     }
@@ -330,7 +330,7 @@ class MainActivity : AppCompatActivity(), RFIDHandler.ResponseHandlerInterface {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if (requestCode == BLUETOOTH_PERMISSION_REQUEST_CODE) {
             val permissionResults = HashMap<String, Int>()
-            val permissionCount = Math.min(permissions.size, grantResults.size)
+            val permissionCount = minOf(permissions.size, grantResults.size)
             for (i in 0 until permissionCount) {
                 permissionResults[permissions[i]] = grantResults[i]
             }

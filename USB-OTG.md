@@ -1,13 +1,13 @@
-# USB/OTG Review (TC53e + RFD40)
+# USB/OTG Review (TC53e + RFD40 - Kotlin Edition)
 
 ## Scope
 This review covers USB-related RFID connection and disconnection behavior under various device modes (charging-only, file transfer, debug mode, and general RFID operations) in:
-- [app/src/main/java/com/zebra/rfid/demo/sdksample/MainActivity.java](app/src/main/java/com/zebra/rfid/demo/sdksample/MainActivity.java)
-- [app/src/main/java/com/zebra/rfid/demo/sdksample/RFIDHandler.java](app/src/main/java/com/zebra/rfid/demo/sdksample/RFIDHandler.java)
+- [app/src/main/java/com/zebra/rfid/demo/sdksample/MainActivity.kt](app/src/main/java/com/zebra/rfid/demo/sdksample/MainActivity.kt)
+- [app/src/main/java/com/zebra/rfid/demo/sdksample/RFIDHandler.kt](app/src/main/java/com/zebra/rfid/demo/sdksample/RFIDHandler.kt)
 
 ## 1. Gating & USB Mode Detection
 
-The application implements active USB broadcast and state monitoring. It listens to three key intents registered in [MainActivity.java](app/src/main/java/com/zebra/rfid/demo/sdksample/MainActivity.java#L215-L225):
+The application implements active USB broadcast and state monitoring. It listens to three key intents registered in `MainActivity.kt`:
 - `android.hardware.usb.action.USB_STATE` (`ACTION_USB_STATE`)
 - `android.intent.action.ACTION_POWER_CONNECTED` (`ACTION_POWER_CONNECTED`)
 - `android.intent.action.ACTION_POWER_DISCONNECTED` (`ACTION_POWER_DISCONNECTED`)
@@ -22,8 +22,6 @@ The state flag `usbFileTransferModeActive` is used to decide whether to trigger 
 - **Fallback Rule**: In custom operating system builds where individual function extras are not broadcasted, the fall-back checks if the USB configuration is both `connected` and `configured` to infer an active data connection.
 - **Power-Only (Charging-Only)**: Inferred when `ACTION_POWER_CONNECTED` is fired but `usbFileTransferModeActive` is `false`.
 
-![USB Mode Detection Flow](images/usb_detection_flow.png)
-
 ---
 
 ## 2. Mode-Specific Connection & Disconnection Behavior
@@ -31,17 +29,17 @@ The state flag `usbFileTransferModeActive` is used to decide whether to trigger 
 ### 2.1 Power-Only Gating (Pass-through Charger)
 * **Design Goal**: Disconnect from the active session on a shared-USB reader during charging and allow pass-through charging. Skip selecting the host reader device while powered.
 * **On Intent (`ACTION_POWER_CONNECTED`)**:
-  1. Activates host suppression: `rfidHandler.setSkipTc53eReaderSelection(true)`.
-  2. Stops the reader session cleanly on the background thread: `rfidHandler.onPause()`.
+  1. Activates host suppression: `rfidHandler?.setSkipTc53eReaderSelection(true)`.
+  2. Stops the reader session cleanly: `rfidHandler?.onPause()`.
   3. Displays a warning toast: `"RFID disconnected while USB power cable connected"`.
 * **On Intent (`ACTION_POWER_DISCONNECTED`)**:
-  1. Restores default search modes: `rfidHandler.setSkipTc53eReaderSelection(false)`.
+  1. Restores default search modes: `rfidHandler?.setSkipTc53eReaderSelection(false)`.
   2. Orchestrates debounced reconnection attempts using a timed retry window (`startPowerReconnectWindow()`).
 
 ### 2.2 USB File Transfer / Debug Mode
 * **Design Goal**: Retain the RFID session until the reader hardware physically disappears (authoritative detachment) during data transfers and software debugging.
 * **On Intent (`ACTION_POWER_CONNECTED`)**:
-  1. Preserves host-reader fallback flags: `rfidHandler.setSkipTc53eReaderSelection(false)`.
+  1. Preserves host-reader fallback flags: `rfidHandler?.setSkipTc53eReaderSelection(false)`.
   2. Forgets previous power latches and warns the user that files are being shared/debugged, but does **not** command an automatic force-disconnect.
   3. Displays a warning status popup: `"USB file transfer active or debug mode\r\nRFID Disconnected\r\nWait for USB cable unplug for reconnect"`.
 
@@ -49,24 +47,24 @@ The state flag `usbFileTransferModeActive` is used to decide whether to trigger 
 * **Design Goal**: Hard detachment and state cleanup are prioritized over power state checks when the hardware is decoupled.
 * **On Event (`RFIDReaderDisappeared`)**:
   1. Authoritatively registers state: `detachedEventInProgress = true`.
-  2. Immediately proceeds with state cleanup in [RFIDHandler.java](app/src/main/java/com/zebra/rfid/demo/sdksample/RFIDHandler.java#L498):
+  2. Immediately proceeds with state cleanup in `RFIDHandler.kt`:
      - Unregisters the event listener from `Reader.Events`.
      - Safely closes connection transport handled by `reader.disconnect()`.
      - Clears the instance: `reader = null` and resets `readersAttached = false` inside `finally` block to allow fresh bindings in the next lifecycle.
-  3. UI warning text: `"Reader detached: <name>"`. The generic generic disconnect toast is suppressed to avoid redundant status noise.
+  3. UI warning text: `"Reader detached: <name>"`. The generic disconnect toast is suppressed to avoid redundant status noise.
 
 ### 2.4 TC22R Bypass
 * **Design Goal**: Guard standard TC22R operations against accidental USB-state interruptions.
-* **Logic Gating**: Evaluated via `rfidHandler.isTC22R()`. If `true`, the broadcast receiver bypasses the entire USB disconnect policy block, outputs `STEP: TC22R, ignore ACTION_POWER_CONNECTED`, and confirms active operational status directly on the interface.
+* **Logic Gating**: Evaluated via `rfidHandler?.isTC22R()`. If `true`, the broadcast receiver bypasses the entire USB disconnect policy block, outputs `STEP: TC22R, ignore ACTION_POWER_CONNECTED`, and confirms active operational status directly on the interface.
 
 ---
 
 ## 3. Reconnect Retries and Suppression Window
 
-To handle immediate transport races that can occur right after the cable is unplugged, the app implements a bounded retry schedule in [MainActivity.java](app/src/main/java/com/zebra/rfid/demo/sdksample/MainActivity.java#L133-L191):
+To handle immediate transport races that can occur right after the cable is unplugged, the app implements a bounded retry schedule in `MainActivity.kt`:
 
 1. **Backoff Delays**: Attempts are staggered at `500 ms` $\to$ `1200 ms` $\to$ `2500 ms` to allow port states and physical interfaces to settle down.
-2. **Busy Checks**: Before executing `requestReaderResumeDebounced()`, the handler evaluates `rfidHandler.isConnectionBusy()`. If initialization or another connection attempt is active, it reschedules itself after a short `400 ms` delay instead of causing concurrent thread calls.
+2. **Busy Checks**: Before executing `requestReaderResumeDebounced()`, the handler evaluates `rfidHandler?.isConnectionBusy()`. If initialization or another connection attempt is active, it reschedules itself after a short `400 ms` delay instead of causing concurrent thread calls.
 3. **UX Suppression**: During this `11,000 ms` window, intermediate transport failures (e.g., `RFID_COMM_OPEN_ERROR`) are hidden from the user interface.
 4. **Outcome Hook**:
    - **Success**: If a loop succeeds and reports a status containing `"connected"`, the reconnect window is immediately closed, and suppression state is cleared.

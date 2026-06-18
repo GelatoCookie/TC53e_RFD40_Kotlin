@@ -87,7 +87,7 @@ class RFIDHandler : Readers.RFIDReaderEventHandler {
         Log.d(TAG, "STEP: RFIDHandler onResume: connecting")
         resumeRequested = true
         if (isReaderConnected()) {
-            return "Connected: " + reader!!.hostName + (if (lastConnectTime > 0) " ($lastConnectTime ms)" else "")
+            return "Connected: ${reader!!.hostName}${if (lastConnectTime > 0) " ($lastConnectTime ms)" else ""}"
         }
         if (readers == null) {
             Log.d(TAG, "STEP: RFIDHandler onResume initSdk() ")
@@ -141,7 +141,7 @@ class RFIDHandler : Readers.RFIDReaderEventHandler {
             }
             Log.d(TAG, "ECRT: #### Reader available in SERVICE_USB Transport")
             if (!availableRFIDReaderList.isNullOrEmpty()) {
-                Log.d(TAG, "ECRT: #### SERVICE_USB list0 = " + availableRFIDReaderList!![0].name)
+                Log.d(TAG, "ECRT: #### SERVICE_USB list0 = ${availableRFIDReaderList!![0].name}")
             }
         } catch (e: InvalidUsageException) {
             invalidUsageException = e
@@ -267,11 +267,11 @@ class RFIDHandler : Readers.RFIDReaderEventHandler {
                 val availableReaders = readers!!.GetAvailableRFIDReaderList()
                 if (!availableReaders.isNullOrEmpty()) {
                     availableRFIDReaderList = availableReaders
-                    Log.d(TAG, "Found RFID Readers Size = " + availableRFIDReaderList!!.size)
+                    Log.d(TAG, "Found RFID Readers Size = ${availableRFIDReaderList!!.size}")
                     val size = availableRFIDReaderList!!.size
                     Log.d(TAG, READER_LIST_LOG_SEPARATOR)
                     for (i in 0 until size) {
-                        Log.d(TAG, "Available reader: " + availableRFIDReaderList!![i].name)
+                        Log.d(TAG, "Available reader: ${availableRFIDReaderList!![i].name}")
                     }
                     Log.d(TAG, READER_LIST_LOG_SEPARATOR)
                     if (skipTc53eReaderSelection) {
@@ -347,8 +347,8 @@ class RFIDHandler : Readers.RFIDReaderEventHandler {
 
     private fun logSelectedReader(selection: ReaderSelection, totalReaders: Int) {
         val selectedName = availableRFIDReaderList!![selection.index].name
-        Log.d(TAG, "Selected reader idx=" + selection.index + ", transport=" + selection.transport + ", reason=" + selection.reason + ", name=" + selectedName)
-        responseHandler?.onReaderSelectionInfo("Readers=$totalReaders | Selected " + selection.transport + " idx=" + selection.index + " | " + selectedName)
+        Log.d(TAG, "Selected reader idx=${selection.index}, transport=${selection.transport}, reason=${selection.reason}, name=$selectedName")
+        responseHandler?.onReaderSelectionInfo("Readers=$totalReaders | Selected ${selection.transport} idx=${selection.index} | $selectedName")
     }
 
     private class ReaderSelection(val index: Int, val reason: String, val transport: String)
@@ -358,16 +358,16 @@ class RFIDHandler : Readers.RFIDReaderEventHandler {
     }
 
     override fun RFIDReaderAppeared(readerDevice: ReaderDevice) {
-        Log.d(TAG, "RFIDReaderAppeared " + readerDevice.name)
-        responseHandler?.sendToast("Reader attached: " + readerDevice.name)
+        Log.d(TAG, "RFIDReaderAppeared ${readerDevice.name}")
+        responseHandler?.sendToast("Reader attached: ${readerDevice.name}")
         beepAppear()
         scheduleOnBackground({ connectReader() }, READER_APPEAR_DELAY_MS)
     }
 
     override fun RFIDReaderDisappeared(readerDevice: ReaderDevice) {
-        Log.d(TAG, "RFIDReaderDisappeared " + readerDevice.name)
+        Log.d(TAG, "RFIDReaderDisappeared ${readerDevice.name}")
         detachedEventInProgress = true
-        responseHandler?.sendToast("Reader detached: " + readerDevice.name)
+        responseHandler?.sendToast("Reader detached: ${readerDevice.name}")
         disconnect()
     }
 
@@ -384,15 +384,15 @@ class RFIDHandler : Readers.RFIDReaderEventHandler {
                         Log.d(TAG, "STEP: connect cancelled before reader.connect because resumeRequested=false")
                         return ""
                     }
-                    Log.d(TAG, "connect " + reader!!.hostName)
+                    Log.d(TAG, "connect ${reader!!.hostName}")
                     beep()
                     val startTime = System.currentTimeMillis()
                     reader!!.connect()
                     lastConnectTime = System.currentTimeMillis() - startTime
-                    Log.d(TAG, "STEP: Reader Connected in " + lastConnectTime + "ms")
+                    Log.d(TAG, "STEP: Reader Connected in ${lastConnectTime}ms")
                     configureReader()
                     if (reader!!.isConnected) {
-                        return "RFID Connected\r\n" + reader!!.hostName + " (" + lastConnectTime + " ms)"
+                        return "RFID Connected\r\n${reader!!.hostName} ($lastConnectTime ms)"
                     }
                 }
             } catch (e: InvalidUsageException) {
@@ -413,7 +413,7 @@ class RFIDHandler : Readers.RFIDReaderEventHandler {
     }
 
     private fun configureReader() {
-        Log.d(TAG, "ConfigureReader " + reader!!.hostName)
+        Log.d(TAG, "ConfigureReader ${reader!!.hostName}")
         IRFIDLogger.getLogger("SDKSAmpleApp").EnableDebugLogs(true)
         if (reader!!.isConnected) {
             try {
@@ -425,7 +425,7 @@ class RFIDHandler : Readers.RFIDReaderEventHandler {
                 reader!!.Events.setInventoryStartEvent(true)
                 reader!!.Events.setInventoryStopEvent(true)
                 reader!!.Events.setReaderDisconnectEvent(true)
-                val sdkVersion = com.zebra.rfid.api3.BuildConfig.VERSION_NAME
+                val sdkVersion = BuildConfig.VERSION_NAME
                 Log.d(TAG, "ECRT: SDK version $sdkVersion")
                 responseHandler?.onSdkVersionDetected(sdkVersion)
                 scheduleOnBackground({ beep() }, READER_CONFIG_BEEP_DELAY_MS)
@@ -501,12 +501,12 @@ class RFIDHandler : Readers.RFIDReaderEventHandler {
             val myTags = reader!!.Actions.getReadTags(100)
             if (myTags != null) {
                 if (DEBUG_TAG_READ_LOGS) {
-                    val sampleCount = Math.min(myTags.size, DEBUG_TAG_SAMPLE_COUNT)
+                    val sampleCount = minOf(myTags.size, DEBUG_TAG_SAMPLE_COUNT)
                     for (index in 0 until sampleCount) {
-                        Log.d(TAG, "Tag ID=" + myTags[index].tagID + ", RSSI=" + myTags[index].peakRSSI)
+                        Log.d(TAG, "Tag ID=${myTags[index].tagID}, RSSI=${myTags[index].peakRSSI}")
                     }
                     if (myTags.size > sampleCount) {
-                        Log.d(TAG, "Tag batch size=" + myTags.size + ", logged=$sampleCount")
+                        Log.d(TAG, "Tag batch size=${myTags.size}, logged=$sampleCount")
                     }
                 }
                 responseHandler?.handleTagdata(myTags)

@@ -214,7 +214,7 @@ Status suppression behavior while reconnecting:
 1. `sendToast(...)` and `onReaderStatusUpdate(...)` call `shouldSuppressReconnectStatus(...)`.
 2. non-connected intermediate statuses are suppressed while `suppressReconnectStatusUntilConnected` is true.
 3. first status containing "connected" logs elapsed time, stops window, and clears suppression.
-4. on timeout, suppression is cleared and UI shows: "USB in used!!!\r\nUnplug the USB cable for reconnect" when still disconnected.
+4. on timeout, suppression is cleared and UI shows: `"USB in used!!!\r\nUnplug the USB cable for reconnect"` when still disconnected.
 
 ## 6) Event-to-Action Matrix
 

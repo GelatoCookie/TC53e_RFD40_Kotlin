@@ -1,0 +1,19 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.zebra.rfid.demo.sdksample.MainActivity">
+
+    <item
+        android:id="@+id/rfid_connect"
+        android:icon="@drawable/ic_connect"
+        android:title="@string/rfid_connect"
+        app:iconTint="@color/actionConnect"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/rfid_disconnect"
+        android:icon="@drawable/ic_disconnect"
+        android:title="@string/rfid_disconnect"
+        app:iconTint="@color/actionDisconnect"
+        app:showAsAction="ifRoom" />
+
+</menu>

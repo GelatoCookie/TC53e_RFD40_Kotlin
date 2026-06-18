@@ -1,0 +1,34 @@
+{
+	"version": "2.0.0",
+	"inputs": [
+		{
+			"id": "androidDeviceSerial",
+			"type": "promptString",
+			"description": "ADB device serial (from 'adb devices -l')",
+			"default": ""
+		}
+	],
+	"tasks": [
+		{
+			"label": "Android: Build Deploy Run (Debug)",
+			"type": "shell",
+			"command": "chmod +x ./runhh.sh && ./runhh.sh",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Android: Build Deploy Run (Debug, Select Device)",
+			"type": "shell",
+			"command": "chmod +x ./runhh.sh && ./runhh.sh --serial \"${input:androidDeviceSerial}\"",
+			"group": "build"
+		},
+		{
+			"label": "Android: Build Deploy Run (Debug, Clean)",
+			"type": "shell",
+			"command": "chmod +x ./runhh.sh && ./runhh.sh --clean",
+			"group": "build"
+		}
+	]
+}

@@ -72,6 +72,100 @@ To handle immediate transport races that can occur right after the cable is unpl
 
 ---
 
+## 3.5 Real-world Trace Analysis: Passthrough USB-Charging & Reconnect Behavior
+
+The following analysis details a real-world trace demonstrating the complexity of the USB state machine under interactive/debug conditions (i.e. file transfer mode with ADB enabled) when a passthrough charger is connected, disconnected, and re-connected during an active reconnect attempt.
+
+### Debug Trace Log
+```log
+2026-06-18 20:52:18.391 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  USB Client action: android.intent.action.ACTION_POWER_CONNECTED
+2026-06-18 20:52:18.392 10905-11278 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  RFIDReaderDisappeared RFD4030-G00B700-US::
+2026-06-18 20:52:18.392 10905-11278 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  ECRT: Disconnect
+2026-06-18 20:52:18.392 10905-11278 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  beep
+2026-06-18 20:52:18.394 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  USB_STATE[sticky] connected=false, configured=false, mtp=false, ptp=false, mass_storage=false, adb=true, rndis=false, explicitDataModeKnown=true, fileTransfer=true
+2026-06-18 20:52:18.394 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  STEP: ACTION_POWER_CONNECTED
+2026-06-18 20:52:18.394 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  ACTION_POWER_CONNECTED usbState: connected=false, configured=false, fileTransfer=true
+2026-06-18 20:52:18.395 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  ACTION_POWER_CONNECTED state: reconnectWindowActive=false, handlerBusy=false
+2026-06-18 20:52:18.395 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  STEP: ACTION_POWER_CONNECTED in file-transfer mode -> keep RFID connected until reader disappears
+2026-06-18 20:52:19.567 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  USB Client action: android.intent.action.ACTION_POWER_DISCONNECTED
+2026-06-18 20:52:19.567 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  ACTION_POWER_DISCONNECTED
+2026-06-18 20:52:19.567 10905-10905 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  reader is not connected
+2026-06-18 20:52:19.567 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  Starting power-unplug reconnect window
+2026-06-18 20:52:20.068 10905-10905 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  reader is not connected
+2026-06-18 20:52:20.069 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  Power reconnect attempt 1/3
+2026-06-18 20:52:20.069 10905-10905 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  STEP: RFIDHandler onResume: connecting
+2026-06-18 20:52:20.069 10905-10905 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  reader is not connected
+2026-06-18 20:52:20.069 10905-10905 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  STEP: RFIDHandler onResume connectReader() 
+2026-06-18 20:52:20.069 10905-10905 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  reader is not connected
+2026-06-18 20:52:20.069 10905-10905 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  STEP: connectReader connectionInProgress
+2026-06-18 20:52:20.069 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  ConnectionTask
+2026-06-18 20:52:20.069 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  STEP: getAvailableReader
+2026-06-18 20:52:20.069 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  Suppressing reconnect status until connected: Connecting...
+2026-06-18 20:52:20.069 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  GetAvailableReader
+2026-06-18 20:52:20.610 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  Found RFID Readers Size = 1
+2026-06-18 20:52:20.611 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  Available reader: RFIDTC53E
+2026-06-18 20:52:20.611 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  ******************************************************************
+2026-06-18 20:52:20.611 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  Selected reader idx=0, transport=DEFAULT, reason=Defaulted to first available reader, name=RFIDTC53E
+2026-06-18 20:52:20.613 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  STEP: finishConnectionAttempt(connect())
+2026-06-18 20:52:20.614 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  connect RFIDTC53E
+2026-06-18 20:52:20.614 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  beep
+2026-06-18 20:52:20.774 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  USB Client action: android.intent.action.ACTION_POWER_CONNECTED
+2026-06-18 20:52:20.787 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  USB_STATE[sticky] connected=false, configured=false, mtp=false, ptp=false, mass_storage=false, adb=true, rndis=false, explicitDataModeKnown=true, fileTransfer=true
+2026-06-18 20:52:20.787 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  STEP: ACTION_POWER_CONNECTED
+2026-06-18 20:52:20.787 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  ACTION_POWER_CONNECTED usbState: connected=false, configured=false, fileTransfer=true
+2026-06-18 20:52:20.787 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  ACTION_POWER_CONNECTED state: reconnectWindowActive=true, handlerBusy=true
+2026-06-18 20:52:20.787 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  STEP: ACTION_POWER_CONNECTED during reconnect window -> cancel reconnect flow
+2026-06-18 20:52:20.788 10905-10905 RFID_SAMPLE_USB         com.zebra.rfid.demo.sdksample        D  STEP: ACTION_POWER_CONNECTED in file-transfer mode -> keep RFID connected until reader disappears
+2026-06-18 20:52:21.116 10905-11341 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  RFIDReaderAppeared RFD4030-G00B700-US::
+2026-06-18 20:52:21.116 10905-11341 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  beepAppear
+2026-06-18 20:52:24.140 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  STEP: connect API OperationFailureException: Response timeout RFID_API_COMMAND_TIMEOUT
+2026-06-18 20:52:24.141 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  reader is not connected
+2026-06-18 20:52:24.141 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  STEP: connectReader connectionInProgress
+2026-06-18 20:52:24.141 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  ConnectionTask
+2026-06-18 20:52:24.141 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  STEP: getAvailableReader
+2026-06-18 20:52:24.142 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  GetAvailableReader
+2026-06-18 20:52:24.705 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  Found RFID Readers Size = 2
+2026-06-18 20:52:24.706 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  Available reader: RFIDTC53E
+2026-06-18 20:52:24.706 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  Available reader: RFD4030-G00B700-US::
+2026-06-18 20:52:24.706 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  ******************************************************************
+2026-06-18 20:52:24.707 10905-10973 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  Selected reader idx=1, transport=ECONNEX, reason=eConnex reader fallback, name=RFD4030-G00B700-US::
+2026-06-18 20:52:24.709 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  STEP: finishConnectionAttempt(connect())
+2026-06-18 20:52:24.710 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  connect RFD4030-G00B700-US::
+2026-06-18 20:52:24.710 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  beep
+2026-06-18 20:52:25.161 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  STEP: Reader Connected in 451ms
+2026-06-18 20:52:25.161 10905-10994 RFID_SAMPLE             com.zebra.rfid.demo.sdksample        D  ConfigureReader RFD4030-G00B700-US::
+```
+
+### Trace Timeline Analysis
+1. **Initial Disconnect during `ACTION_POWER_CONNECTED`**:
+   - At `20:52:18.391`, the power cable is plugged in (`ACTION_POWER_CONNECTED`).
+   - Concurrently, the physical reader state fluctuates (`RFIDReaderDisappeared` on the RFD4030).
+   - Because Android interactive debug options are active (`adb=true`, `fileTransfer=true`), the app determines that the device is running in file-transfer mode.
+   - Design Policy Rule: It logs `STEP: ACTION_POWER_CONNECTED in file-transfer mode -> keep RFID connected until reader disappears` and skips force-disconnect, allowing the reader to disappear naturally.
+
+2. **Unplug & Window Initialization**:
+   - At `20:52:19.567`, the power client fires `ACTION_POWER_DISCONNECTED`.
+   - The app verifies that the reader is currently disconnected and initiates the power-unplug reconnect window (`Starting power-unplug reconnect window`).
+
+3. **Staged Attempt 1 & Race Condition**:
+   - At `20:52:20.069`, the staged backup timer schedules `Power reconnect attempt 1/3`.
+   - It selects index 0 (`RFIDTC53E` host reader) since at this exact millisecond, `RFD4030` is not yet enumerated by the USB daemon (size = 1).
+   - While this connection task is running, the UI suppresses failure status reports: `Suppressing reconnect status until connected: Connecting...`.
+
+4. **Second Interruption / Double Insertion**:
+   - At `20:52:20.774`, the power cable is registered as connected again (`ACTION_POWER_CONNECTED`) mid-flight during the active reconnect task.
+   - The state engine detects `reconnectWindowActive=true` and `handlerBusy=true`.
+   - It acts immediately: `STEP: ACTION_POWER_CONNECTED during reconnect window -> cancel reconnect flow` to close the active backoff loop.
+
+5. **Enumeration & Final Recovery**:
+   - At `20:52:21.116`, the RFD4030 is fully enumerated and triggers the `RFIDReaderAppeared` event, emitting an audible `beepAppear`.
+   - At `20:52:24.140`, the previous connection task to `RFIDTC53E` fails with a timeout: `Response timeout RFID_API_COMMAND_TIMEOUT`.
+   - Because the reader remains disconnected, this failure prompts a new `connectReader()` cycle.
+   - The system queries readers and now discovers TWO readers: `RFIDTC53E` and `RFD4030-G00B700-US::`.
+   - The selection strategy selects index 1 (`RFD4030`) using the eConnex fallback rule and cleanly initiates the final connection, completing in `451 ms` (`STEP: Reader Connected in 451ms`).
+
+---
+
 ## 4. Current State Matrix
 
 | Feature / Scenario | Mode Decided | Skip Selection Flag | RFID Connect Policy | Expected UI Status / Toast |

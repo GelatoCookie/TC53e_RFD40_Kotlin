@@ -72,7 +72,25 @@ To handle immediate transport races that can occur right after the cable is unpl
 
 ---
 
-## 4. Current State Matrix
+## 4. Verified Log Analysis (USB Reconnect Flow)
+
+The following sequence was captured on a TC53e during a USB charging cycle:
+
+| Timestamp | Component | Log Message / Analysis |
+|---|---|---|
+| `21:02:02.895` | `RFID_SAMPLE_USB` | `ACTION_POWER_CONNECTED` received. |
+| `21:02:02.898` | `RFID_SAMPLE` | `RFIDReaderDisappeared`: Authoritative SDK event indicating hardware-level USB release for power sharing. |
+| `21:02:02.898` | `RFID_SAMPLE` | `ECRT: Disconnect`: App cleanup begins. |
+| `21:02:03.676` | `RFID_SAMPLE_USB` | `ACTION_POWER_DISCONNECTED` received: User unplugged the cable. |
+| `21:02:03.676` | `RFID_SAMPLE_USB` | `Starting power-unplug reconnect window`: Debounce/retry logic initiated. |
+| `21:02:04.177` | `RFID_SAMPLE_USB` | `Power reconnect attempt 1/3`: First staggered retry executes. |
+| `21:02:04.716` | `RFID_SAMPLE` | `Found RFID Readers Size = 1`: Hardware successfully re-enumerated on the USB bus. |
+| `21:02:04.717` | `RFID_SAMPLE` | `Selected reader ... name=RFIDTC53E`: Logic correctly identifies the internal host-shared reader. |
+| `21:02:06.619` | `RFID_SAMPLE` | `STEP: Reader Connected in 1900ms`: Full session restoration complete. |
+
+---
+
+## 5. Current State Matrix
 
 | Feature / Scenario | Mode Decided | Skip Selection Flag | RFID Connect Policy | Expected UI Status / Toast |
 |---|---|---|---|---|

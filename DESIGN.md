@@ -216,6 +216,27 @@ Status suppression behavior while reconnecting:
 3. first status containing "connected" logs elapsed time, stops window, and clears suppression.
 4. on timeout, suppression is cleared and UI shows: `"USB in used!!!\r\nUnplug the USB cable for reconnect"` when still disconnected.
 
+### 5.3 Verified Lifecycle Logs (USB Charging Flow)
+
+The following log trace illustrates a successful power-plug disconnect followed by a power-unplug reconnect on a TC53e device:
+
+1.  **Cable Plugged In**:
+    *   `ACTION_POWER_CONNECTED` received.
+    *   `RFIDReaderDisappeared` fired by SDK (hardware-level USB release).
+    *   `RFIDHandler` executes `disconnect()`.
+    *   `STEP: ACTION_POWER_CONNECTED in file-transfer mode -> keep RFID connected until reader disappears` (Log indicates intentional wait for authoritative hardware detach).
+
+2.  **Cable Unplugged**:
+    *   `ACTION_POWER_DISCONNECTED` received.
+    *   `Starting power-unplug reconnect window` (500ms delay).
+
+3.  **Automatic Reconnect**:
+    *   `Power reconnect attempt 1/3` executes.
+    *   `RFIDHandler onResume: connecting` -> `connectReader()`.
+    *   SDK detects hardware: `Found RFID Readers Size = 1` -> `Available reader: RFIDTC53E`.
+    *   Successful connection: `STEP: Reader Connected in 1900ms`.
+    *   UI serial numbers fetched: `Device serials - Android: TC53E_..., Reader: RFIDTC53E`.
+
 ## 6) Event-to-Action Matrix
 
 | Event | Owner | Action | Target Outcome |

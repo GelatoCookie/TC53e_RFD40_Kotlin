@@ -21,6 +21,7 @@ How to use this file:
 9. [Example Nine: USB Cable Unplug and Reconnect Window](#9-example-nine-usb-cable-unplug-and-reconnect-window)
 10. [Example Ten: Power Connected -> Disconnected -> Reconnect](#10-example-ten-power-connected---disconnected---reconnect)
 11. [Example Eleven: Power Disconnected While Already Connected](#11-example-eleven-power-disconnected-while-already-connected)
+12. [Example Twelve: Verified Power-Plug Disconnect and Power-Unplug Reconnect Trace](#12-example-twelve-verified-power-plug-disconnect-and-power-unplug-reconnect-trace)
 
 
 ## 1) Example One: Init and Connect
@@ -441,6 +442,33 @@ if (Intent.ACTION_POWER_DISCONNECTED == action) {
     startPowerReconnectWindow()
 }
 ```
+
+## 12) Example Twelve: Verified Power-Plug Disconnect and Power-Unplug Reconnect Trace
+
+### Thread context
+- `RFIDSerialIOMgr`: Low-level USB error during bus release.
+- Main thread: Power broadcast events.
+- SDK callback thread: Hardware detach/attach events.
+- Background executor: RFID session restoration.
+
+### Log Signature (21:02 Trace)
+```log
+21:02:02.719 RFIDSerialIOMgr E Run ending due to exception: java.io.IOException: Queueing USB request failed
+21:02:02.895 RFID_SAMPLE_USB D USB Client action: android.intent.action.ACTION_POWER_CONNECTED
+21:02:02.898 RFID_SAMPLE     D RFIDReaderDisappeared RFD4030-G00B700-US::
+21:02:03.676 RFID_SAMPLE_USB D USB Client action: android.intent.action.ACTION_POWER_DISCONNECTED
+21:02:03.676 RFID_SAMPLE_USB D Starting power-unplug reconnect window
+21:02:04.177 RFID_SAMPLE_USB D Power reconnect attempt 1/3
+21:02:04.716 RFID_SAMPLE     D Found RFID Readers Size = 1
+21:02:04.717 RFID_SAMPLE     D Selected reader idx=0, transport=DEFAULT, reason=Defaulted to first available reader, name=RFIDTC53E
+21:02:06.619 RFID_SAMPLE     D STEP: Reader Connected in 1900ms
+```
+
+### Analysis
+1.  **Transport Error**: `RFIDSerialIOMgr` detects the USB bus change before the Android `ACTION_POWER_CONNECTED` broadcast arrives.
+2.  **Hardware Release**: The SDK fires `RFIDReaderDisappeared` as the internal USB hub switches from data mode to power-sharing mode.
+3.  **User Action**: Cable is unplugged 0.8s later (`ACTION_POWER_DISCONNECTED`).
+4.  **Recovery**: The app waits 0.5s, starts attempt 1, detects the re-enumerated hardware (`RFIDTC53E`), and restores the session in 1.9s.
 
 ## Suggestions for Ongoing Maintenance
 

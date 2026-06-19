@@ -125,6 +125,7 @@ adb shell am start -n com.zebra.rfid.demo.sdksample/.MainActivity
   - Established a staggered reconnect schedule ($500\text{ ms} \to 1200\text{ ms} \to 2500\text{ ms}$) under `startPowerReconnectWindow()`.
   - Added busy checks (`rfidHandler.isConnectionBusy()`), automatic timeouts at $11,000\text{ ms}$, and UI status suppression on intermediate errors to avoid status logs noise.
 - Created `TC53eDesign.md` and `TC53eUsbOTG.md` reflecting Kotlin base.
+- **Verified USB Charging Flow**: Documented a full trace of power-plug disconnect and power-unplug reconnect (1900ms restoration) in `TC53eDesign.md` and `TC53eUsbOTG.md`.
 
 ### 2026-06-17 (Pre-Kotlin Migration)
 
